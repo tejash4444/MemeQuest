@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from openai import OpenAI
 import os
+import random
 
 # Set your OpenRouter API key
 OPENROUTER_API_KEY = "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"
