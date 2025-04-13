@@ -29,11 +29,6 @@ class Account{
       cout <<  "Current Balance: " << balance << "\n";
     }
 
-    void Withdraw(double withdrawn_money){
-      this-> balance -= withdrawn_money;
-      cout <<  "Succesfully Deposited: " << withdrawn_money << "\n";
-      cout <<  "Current Balance: " << balance << "\n";
-    }
 
 };
 
