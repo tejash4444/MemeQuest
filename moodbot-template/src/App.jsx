@@ -12,6 +12,22 @@ const App = () => {
 
   const handleSelection = (text) => {
     setSelectedActivity(text);
+
+    const commandMap = {
+      Hunting: "!hunt",
+      Fishing: "!fish",
+      "Coin Flip": "!coin",
+      "Dice Roll": "!dice",
+      Blackjack: "!blackjack",
+    };
+
+    const command = commandMap[text];
+    if (command) {
+      setInput(command);
+      setTimeout(() => {
+        sendMessage();
+      }, 100); // short delay to allow input update
+    }
   };
 
   const sendMessage = async () => {
@@ -80,7 +96,7 @@ const App = () => {
       </aside>
 
       {/* Main chat area */}
-      <main className="flex-1 flex flex-col justify-between p-6 overflow-hidden">
+      <main className="flex flex-col flex-1 p-6 overflow-hidden h-screen">
         <div className="text-xl font-semibold mb-4 text-blue-700">
           {selectedActivity}
         </div>
@@ -110,46 +126,46 @@ const App = () => {
           </select>
         </div>
         {/* Chat area */}
-        <div className="flex-1 overflow-y-auto mb-4 space-y-2 px-1 relative scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-          <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent pointer-events-none z-10" />
-          {chatLog.map((msg, idx) => (
-            <div
-              key={idx}
-              className={`flex ${
-                msg.sender === "user" ? "justify-end" : "justify-start"
-              }`}
-            >
+        <div className="flex flex-col flex-1 overflow-hidden bg-transparent">
+          <div className="flex-1 overflow-y-auto space-y-2 pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+            {chatLog.map((msg, idx) => (
               <div
-                className={`inline-block break-words px-4 py-2 rounded-2xl shadow text-sm max-w-[80%] ${
-                  msg.sender === "user"
-                    ? "bg-blue-500 text-white"
-                    : "bg-gray-200 text-gray-800"
+                key={idx}
+                className={`flex ${
+                  msg.sender === "user" ? "justify-end" : "justify-start"
                 }`}
               >
-                {msg.text}
+                <div
+                  className={`inline-block break-words px-4 py-2 rounded-2xl shadow text-sm max-w-[80%] ${
+                    msg.sender === "user"
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-200 text-gray-800"
+                  }`}
+                >
+                  {msg.text}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Input */}
-        <div className="sticky bottom-0 bg-white z-20 flex">
-          <input
-            type="text"
-            placeholder="Type your message..."
-            className="flex-1 px-4 py-2 rounded-l border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-          />
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={sendMessage}
-            className="bg-blue-600 text-white px-4 py-2 rounded-r hover:bg-blue-700 transition"
-          >
-            Send
-          </motion.button>
+            ))}
+          </div>
+          {/* Input */}
+          <div className="mt-4 bg-white z-20 flex">
+            <input
+              type="text"
+              placeholder="Type your message..."
+              className="flex-1 px-4 py-2 rounded-l border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+            />
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={sendMessage}
+              className="bg-blue-600 text-white px-4 py-2 rounded-r hover:bg-blue-700 transition"
+            >
+              Send
+            </motion.button>
+          </div>
         </div>
       </main>
     </div>

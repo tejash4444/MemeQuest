@@ -18,20 +18,53 @@ MODES = {
     "existential": "Speak with deep, philosophical thoughts, posing thought-provoking questions in a poetic tone. Perfect for midnight musings.",
     "sarcastic": "Respond with dry, witty sarcasm. Keep it clever, and don't hold back on the playful jabs, but always in a fun way.",
 }
-'''
+
 # Refined Types with more clarity
-TYPES = {
-    "roast": "Craft a clever and humorous roast. Be witty and teasing, but never mean-spirited. Think of it like a friendly burn between close friends — light-hearted but funny.",
-    "compliment": "Give a heartfelt and genuine compliment that could brighten someone's day. Make it thoughtful and sincere, something that feels special.",
-    "joke": "Tell a light-hearted and funny joke that suits the mood. Keep it clever, punny, or quirky. Avoid offensive humor — the goal is to make the user smile.",
-}
-'''
+# TYPES = {
+#     "roast": "Craft a clever and humorous roast. Be witty and teasing, but never mean-spirited. Think of it like a friendly burn between close friends — light-hearted but funny.",
+#     "compliment": "Give a heartfelt and genuine compliment that could brighten someone's day. Make it thoughtful and sincere, something that feels special.",
+#     "joke": "Tell a light-hearted and funny joke that suits the mood. Keep it clever, punny, or quirky. Avoid offensive humor — the goal is to make the user smile.",
+# }
+
 @app.route('/chat', methods=['POST'])
 def chat():
     data = request.json
     input_text = data.get('input', '')
     mode = MODES.get(data.get('mode', 'normal'), MODES['normal'])
     task = TYPES.get(data.get('type', 'compliment'), TYPES['compliment'])
+
+    # Handle activity commands before sending to OpenRouter
+    if input_text == "!hunt":
+        animals = ["a deer", "a rabbit", "a wild boar", "nothing at all"]
+        result = random.choice(animals)
+        return jsonify({"response": f"You went hunting and found {result}!"})
+
+    elif input_text == "!fish":
+        fishes = ["a big salmon", "a tiny goldfish", "an old boot", "nothing"]
+        result = random.choice(fishes)
+        return jsonify({"response": f"You went fishing and caught {result}!"})
+
+    elif input_text == "!coin":
+        result = random.choice(["Heads", "Tails"])
+        return jsonify({"response": f"The coin landed on **{result}**."})
+
+    elif input_text == "!dice":
+        result = random.randint(1, 6)
+        return jsonify({"response": f"You rolled a {result} 🎲."})
+
+    elif input_text == "!blackjack":
+        player = random.randint(16, 22)
+        dealer = random.randint(16, 22)
+        if player > 21:
+            outcome = "You busted! Dealer wins."
+        elif dealer > 21 or player > dealer:
+            outcome = "You win!"
+        elif dealer == player:
+            outcome = "It's a tie!"
+        else:
+            outcome = "Dealer wins!"
+        return jsonify({"response": f"You got {player}, dealer got {dealer}. {outcome}"})
+
 
     # Compose the prompt by combining the mode and task
     prompt = f"""
