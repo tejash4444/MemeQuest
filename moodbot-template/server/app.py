@@ -7,7 +7,7 @@ import datetime
 import re
 
 # Set your OpenRouter API key - Replace with your actual API key
-OPENROUTER_API_KEY = "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"
+OPENROUTER_API_KEY = "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"
 
 # Initialize the Flask application
 app = Flask(__name__)
