@@ -189,7 +189,7 @@ const Confetti = ({ visible }) => {
 
 const App = () => {
   const [selectedActivity, setSelectedActivity] = useState(
-    "Welcome to MoodBot!"
+    "Welcome to MemeQuest!"
   );
   const [input, setInput] = useState("");
   const [chatLog, setChatLog] = useState([]);
