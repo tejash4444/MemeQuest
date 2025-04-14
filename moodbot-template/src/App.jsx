@@ -1,22 +1,57 @@
 import React, { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+
+// Reusable Components
+const PrimaryButton = ({ text, onClick, icon, className = "" }) => (
+  <motion.button
+    whileHover={{ scale: 1.03 }}
+    whileTap={{ scale: 0.98 }}
+    onClick={onClick}
+    className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${className}`}
+  >
+    {icon && <span className="text-lg">{icon}</span>}
+    {text}
+  </motion.button>
+);
+
+const ChatBubble = ({ message, isUser }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-md ${
+      isUser
+        ? "bg-blue-600 text-white ml-auto"
+        : "bg-gray-200 dark:bg-gray-700 dark:text-gray-100"
+    }`}
+  >
+    {message}
+  </motion.div>
+);
+
+const LoadingSpinner = () => (
+  <div className="flex justify-center py-4">
+    <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+  </div>
+);
 
 const App = () => {
-  const [selectedActivity, setSelectedActivity] = useState(
-    "Welcome to MoodBot!"
-  );
+  // Existing state (unchanged backend logic)
+  const [selectedActivity, setSelectedActivity] = useState("Welcome to MoodBot!");
   const [input, setInput] = useState("");
   const [chatLog, setChatLog] = useState([]);
   const [mode, setMode] = useState("normal");
-  const [memeCurrency, setMemeCurrency] = useState(100);
+  const [memeCash, setMemeCash] = useState(100);
   const [popup, setPopup] = useState("");
   const [dailyRewardCollected, setDailyRewardCollected] = useState(false);
   const [wager, setWager] = useState(0);
   const [result, setResult] = useState("");
-  const [isMemeChat, setIsMemeChat] = useState(false); // New state for Meme chat
+  const [isMemeChat, setIsMemeChat] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const endOfMessagesRef = useRef(null);
 
+  // Existing useEffect (unchanged)
   useEffect(() => {
     const lastCollection = localStorage.getItem("lastDailyReward");
     if (lastCollection) {
@@ -32,6 +67,7 @@ const App = () => {
     }
   }, []);
 
+  // Existing handleSelection (unchanged)
   const handleSelection = (text) => {
     setSelectedActivity(text);
     const commandMap = {
@@ -51,17 +87,19 @@ const App = () => {
     }
   };
 
+  // Modified sendMessage with loading state
   const sendMessage = async () => {
     if (!input.trim()) return;
 
     const userMessage = { sender: "user", text: input };
     setChatLog((prev) => [...prev, userMessage]);
+    setIsLoading(true);
 
     try {
       const res = await fetch("http://localhost:5000/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input, mode, coins: memeCurrency, wager }),
+        body: JSON.stringify({ input, mode, coins: memeCash, wager }),
       });
 
       const data = await res.json();
@@ -72,20 +110,20 @@ const App = () => {
       setChatLog((prev) => [...prev, botMessage]);
 
       if (data.new_balance !== undefined) {
-        setMemeCurrency(data.new_balance);
+        setMemeCash(data.new_balance);
       }
 
       if (data.result) {
-        setResult(`You ${data.result} ${wager} Meme Currency!`);
+        setResult(`You ${data.result} ${wager} Meme Cash!`);
       }
 
       if (input === "!daily" && !dailyRewardCollected) {
         localStorage.setItem("lastDailyReward", new Date().toISOString());
-        setPopup("🎁 Daily Meme Currency collected!");
+        setPopup("🎁 Daily Meme Cash collected!");
         setDailyRewardCollected(true);
         setTimeout(() => setPopup(""), 3000);
       } else if (input === "!daily") {
-        setPopup("🎁 You've already collected your daily Meme Currency today.");
+        setPopup("🎁 You've already collected your daily Meme Cash today.");
         setTimeout(() => setPopup(""), 3000);
       }
     } catch (err) {
@@ -93,6 +131,8 @@ const App = () => {
         ...prev,
         { sender: "bot", text: "Error connecting to server." },
       ]);
+    } finally {
+      setIsLoading(false);
     }
 
     setInput("");
@@ -103,179 +143,311 @@ const App = () => {
   }, [chatLog]);
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-gray-100 to-blue-50 font-sans relative">
-      {/* Meme Currency Balance */}
-      <div className="absolute top-4 left-4 bg-yellow-100 text-yellow-800 font-bold px-4 py-2 rounded shadow-md z-30">
-        🪙 Meme Currency: {memeCurrency}
+    <div
+      className={`flex min-h-screen font-sans transition-colors duration-300 ${
+        darkMode
+          ? "bg-gray-900 text-gray-100"
+          : "bg-gradient-to-br from-gray-50 to-blue-50 text-gray-900"
+      }`}
+    >
+      {/* Meme Cash Badge (Bottom Left) */}
+      <div
+        className={`absolute bottom-4 left-4 px-4 py-2 rounded-full shadow-md z-30 flex items-center gap-2 ${
+          darkMode
+            ? "bg-gray-800 text-yellow-400 border border-yellow-400"
+            : "bg-yellow-100 text-yellow-800"
+        }`}
+      >
+        <span className="text-lg">💵</span> {/* Cash Emoji */}
+        <span className="font-bold">{memeCash}</span>
       </div>
 
-      {/* Profile Section on Top Right */}
-      <div className="absolute top-4 right-4 bg-white p-4 rounded-lg shadow-md flex items-center space-x-2 z-30">
-        <div className="w-10 h-10 bg-gray-400 rounded-full flex items-center justify-center text-white font-bold text-lg">
+      {/* Profile Section */}
+      <div
+        className={`absolute top-4 right-4 p-3 rounded-full shadow-md flex items-center space-x-2 z-30 ${
+          darkMode ? "bg-gray-800 border border-gray-600" : "bg-white"
+        }`}
+      >
+        <div
+          className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${
+            darkMode ? "bg-gray-700 text-gray-300" : "bg-blue-500 text-white"
+          }`}
+        >
           U
         </div>
-        <div className="text-sm font-semibold text-gray-700">UserName</div>
       </div>
 
-      {/* Popup */}
-      {popup && (
-        <div className="absolute top-16 left-1/2 transform -translate-x-1/2 bg-green-100 text-green-800 px-4 py-2 rounded shadow-md z-30">
-          {popup}
-        </div>
-      )}
+      {/* Popup Notification */}
+      <AnimatePresence>
+        {popup && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className={`fixed top-16 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-full z-50 flex items-center gap-2 ${
+              darkMode
+                ? "bg-green-900 text-green-200 border border-green-700"
+                : "bg-green-100 text-green-800"
+            }`}
+          >
+            {popup}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Sidebar */}
-      <aside className="w-64 bg-white shadow-md p-4">
-        <h2 className="text-2xl font-bold mb-6 text-blue-600">MoodBot</h2>
-        <div className="space-y-4">
-          {/* Activities Section moved to Games */}
+      <aside
+        className={`w-64 p-4 h-screen sticky top-0 shadow-lg transition-colors duration-300 ${
+          darkMode ? "bg-gray-800 border-r border-gray-700" : "bg-white"
+        }`}
+      >
+        <motion.h2
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className={`text-2xl font-bold mb-8 ${
+            darkMode ? "text-blue-400" : "text-blue-600"
+          }`}
+        >
+          MoodBot
+        </motion.h2>
+
+        <div className="space-y-6">
           <div>
-            <h3 className="text-sm font-semibold text-gray-600">Activities</h3>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => handleSelection("Chat Games")}
-              className="w-full px-3 py-2 text-left bg-blue-100 hover:bg-blue-200 rounded transition"
+            <h3
+              className={`text-xs uppercase tracking-wider mb-2 ${
+                darkMode ? "text-gray-400" : "text-gray-500"
+              }`}
             >
-              Chat Games
-            </motion.button>
+              Activities
+            </h3>
+            <div className="space-y-2">
+              <PrimaryButton
+                text="Chat Games"
+                onClick={() => handleSelection("Chat Games")}
+                className={`${
+                  darkMode
+                    ? "bg-gray-700 hover:bg-gray-600"
+                    : "bg-blue-100 hover:bg-blue-200"
+                }`}
+              />
+              <PrimaryButton
+                text="Meme Chat"
+                onClick={() => setIsMemeChat(true)}
+                icon="😂"
+                className={`${
+                  darkMode
+                    ? "bg-gray-700 hover:bg-gray-600"
+                    : "bg-purple-100 hover:bg-purple-200"
+                }`}
+              />
+            </div>
           </div>
 
-          {/* Meme Button added */}
           <div>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setIsMemeChat(true)}
-              className="w-full px-3 py-2 text-left bg-purple-100 hover:bg-purple-200 rounded transition"
+            <h3
+              className={`text-xs uppercase tracking-wider mb-2 ${
+                darkMode ? "text-gray-400" : "text-gray-500"
+              }`}
             >
-              Meme Chat
-            </motion.button>
+              Games
+            </h3>
+            <div className="space-y-2">
+              {["Hunting", "Fishing", "Coin Flip", "Dice Roll", "Blackjack"].map(
+                (act) => (
+                  <PrimaryButton
+                    key={act}
+                    text={act}
+                    onClick={() => handleSelection(act)}
+                    className={`${
+                      darkMode
+                        ? "bg-gray-700 hover:bg-gray-600"
+                        : "bg-gray-100 hover:bg-gray-200"
+                    }`}
+                  />
+                )
+              )}
+              <PrimaryButton
+                text="Daily Bonus"
+                onClick={() => {
+                  setInput("!daily");
+                  sendMessage();
+                }}
+                icon="🎁"
+                className={`${
+                  darkMode
+                    ? "bg-gray-700 hover:bg-gray-600"
+                    : "bg-green-100 hover:bg-green-200"
+                }`}
+              />
+            </div>
           </div>
 
-          {/* Games Section moved to Activities */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-600">Games</h3>
-            {["Hunting", "Fishing", "Coin Flip", "Dice Roll", "Blackjack"].map(
-              (act) => (
-                <motion.button
-                  key={act}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => handleSelection(act)}
-                  className="w-full px-3 py-2 text-left bg-gray-100 hover:bg-gray-200 rounded transition"
-                >
-                  {act}
-                </motion.button>
-              )
-            )}
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => {
-                setInput("!daily");
-                sendMessage();
-              }}
-              className="w-full mt-2 px-3 py-2 text-left bg-green-100 hover:bg-green-200 rounded transition"
+            <h3
+              className={`text-xs uppercase tracking-wider mb-2 ${
+                darkMode ? "text-gray-400" : "text-gray-500"
+              }`}
             >
-              🎁 Daily Bonus
-            </motion.button>
-          </div>
-
-          {/* Others Section */}
-          <div>
-            <h3 className="text-sm font-semibold text-gray-600">Others</h3>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => handleSelection("Items")}
-              className="w-full px-3 py-2 text-left bg-indigo-100 hover:bg-indigo-200 rounded transition"
-            >
-              Items
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => handleSelection("Shop")}
-              className="w-full px-3 py-2 text-left bg-teal-100 hover:bg-teal-200 rounded transition"
-            >
-              Shop
-            </motion.button>
+              Others
+            </h3>
+            <div className="space-y-2">
+              <PrimaryButton
+                text="Items"
+                onClick={() => handleSelection("Items")}
+                icon="🎒"
+                className={`${
+                  darkMode
+                    ? "bg-gray-700 hover:bg-gray-600"
+                    : "bg-indigo-100 hover:bg-indigo-200"
+                }`}
+              />
+              <PrimaryButton
+                text="Shop"
+                onClick={() => handleSelection("Shop")}
+                icon="🛒"
+                className={`${
+                  darkMode
+                    ? "bg-gray-700 hover:bg-gray-600"
+                    : "bg-teal-100 hover:bg-teal-200"
+                }`}
+              />
+            </div>
           </div>
         </div>
       </aside>
 
       {/* Main Chat Section */}
-      <main className="flex flex-col flex-1 p-6 overflow-hidden h-screen">
-        <div className="text-xl font-semibold mb-4 text-blue-700">
-          {selectedActivity}
-        </div>
-
-        <div className="flex gap-4 mb-4">
-          <select
-            value={mode}
-            onChange={(e) => setMode(e.target.value)}
-            className="px-3 py-2 border rounded bg-white shadow focus:ring-2 focus:ring-blue-400"
+      <main className="flex-1 flex flex-col p-6 overflow-hidden">
+        <div className="flex justify-between items-center mb-6">
+          <motion.h1
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className={`text-2xl font-bold ${
+              darkMode ? "text-blue-400" : "text-blue-600"
+            }`}
           >
-            <option value="normal">Normal</option>
-            <option value="flirty">Flirty</option>
-            <option value="therapic">Therapic</option>
-            <option value="motivational">Motivational</option>
-            <option value="existential">Existential</option>
-            <option value="sarcastic">Sarcastic</option>
-          </select>
-        </div>
+            {selectedActivity}
+          </motion.h1>
 
-        <div className="flex flex-col flex-1 overflow-hidden bg-transparent">
-          <div className="flex-1 overflow-y-auto space-y-2 pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-            {chatLog.map((msg, idx) => (
-              <div
-                key={idx}
-                className={`flex ${
-                  msg.sender === "user" ? "justify-end" : "justify-start"
+          <div className="flex gap-4 items-center">
+            <select
+              value={mode}
+              onChange={(e) => setMode(e.target.value)}
+              className={`px-3 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none ${
+                darkMode
+                  ? "bg-gray-800 border-gray-600 text-gray-200"
+                  : "bg-white"
+              }`}
+            >
+              <option value="normal">Normal</option>
+              <option value="flirty">Flirty</option>
+              <option value="therapic">Therapic</option>
+              <option value="motivational">Motivational</option>
+              <option value="existential">Existential</option>
+              <option value="sarcastic">Sarcastic</option>
+            </select>
+
+            <label className="flex items-center cursor-pointer">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  className="sr-only"
+                  checked={darkMode}
+                  onChange={() => setDarkMode(!darkMode)}
+                />
+                <div
+                  className={`block w-10 h-6 rounded-full transition-colors ${
+                    darkMode ? "bg-blue-600" : "bg-gray-400"
+                  }`}
+                ></div>
+                <div
+                  className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${
+                    darkMode ? "translate-x-4" : ""
+                  }`}
+                ></div>
+              </div>
+              <span
+                className={`ml-2 text-sm ${
+                  darkMode ? "text-gray-300" : "text-gray-700"
                 }`}
               >
-                <div
-                  className={`inline-block break-words px-6 py-4 rounded-2xl shadow-lg max-w-[85%] text-lg ${
-                    msg.sender === "user"
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-200 text-gray-800"
-                  }`}
-                >
-                  {msg.text}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {result && (
-            <div className="mt-2 bg-gray-100 text-center p-2 rounded-md">
-              <strong>{result}</strong>
-            </div>
-          )}
-
-          <div className="mt-4 bg-white z-20 flex">
-            <input
-              type="text"
-              placeholder="Type your message..."
-              className="flex-1 px-4 py-2 rounded-l border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-            />
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={sendMessage}
-              className="bg-blue-600 text-white px-4 py-2 rounded-r hover:bg-blue-700 transition"
-            >
-              Send
-            </motion.button>
+                {darkMode ? "🌙 Dark" : "☀️ Light"}
+              </span>
+            </label>
           </div>
         </div>
-      </main>
 
-      <div ref={endOfMessagesRef} />
+        {/* Chat Container */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto space-y-4 pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent mb-4">
+            <AnimatePresence>
+              {chatLog.map((msg, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className={`flex ${
+                    msg.sender === "user" ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  <ChatBubble
+                    message={msg.text}
+                    isUser={msg.sender === "user"}
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+
+            {isLoading && <LoadingSpinner />}
+            <div ref={endOfMessagesRef} />
+          </div>
+
+          {/* Result Notification */}
+          {result && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className={`p-3 rounded-lg text-center mb-4 ${
+                darkMode
+                  ? "bg-gray-800 border border-gray-700"
+                  : "bg-gray-100 border border-gray-200"
+              }`}
+            >
+              <strong>{result}</strong>
+            </motion.div>
+          )}
+
+          {/* Input Area */}
+          <motion.div
+            layout
+            className={`p-2 rounded-xl shadow-md ${
+              darkMode ? "bg-gray-800" : "bg-white"
+            }`}
+          >
+            <div className="flex">
+              <input
+                type="text"
+                placeholder="Type your message..."
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                className={`flex-1 px-4 py-3 rounded-l-xl focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  darkMode
+                    ? "bg-gray-700 placeholder-gray-400"
+                    : "bg-gray-50 placeholder-gray-500"
+                }`}
+              />
+              <PrimaryButton
+                text="Send"
+                onClick={sendMessage}
+                className="bg-blue-600 hover:bg-blue-700 text-white rounded-l-none rounded-r-xl px-6"
+              />
+            </div>
+          </motion.div>
+        </div>
+      </main>
     </div>
   );
 };
